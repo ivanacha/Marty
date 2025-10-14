@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		9215469A2E97564F00C31FCD /* Marty.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Marty.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9215469A2E97564F00C31FCD /* Marty.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = Marty.app; path = "/Users/iiivannn/Documents/Software/Portfolio/Marty/build/Debug-iphoneos/Marty.app"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -46,16 +46,7 @@
 			isa = PBXGroup;
 			children = (
 				9215469C2E97564F00C31FCD /* Marty */,
-				9215469B2E97564F00C31FCD /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		9215469B2E97564F00C31FCD /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				9215469A2E97564F00C31FCD /* Marty.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -108,7 +99,7 @@
 			mainGroup = 921546912E97564F00C31FCD;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 9215469B2E97564F00C31FCD /* Products */;
+			productRefGroup = 921546912E97564F00C31FCD;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (

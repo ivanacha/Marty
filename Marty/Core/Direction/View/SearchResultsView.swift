@@ -21,7 +21,7 @@ struct SearchResultsView: View {
                 TextField("Search for a place", text: $searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding()
-                    .onChange(of: searchText) { newValue in
+                    .onChange(of: searchText) { oldValue, newValue in
                         searchLocation(query: newValue)
                     }
                 

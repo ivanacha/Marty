@@ -31,26 +31,25 @@ struct DirectionView: View {
             
             // Foreground UI
             VStack(spacing: 0) {
+                Spacer()
                 // Search Bar
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
                         .padding(.leading, 12)
                     
-                    TextField("Where you going twin?", text: $searchText)
+                    TextField("Where to?", text: $searchText)
                         .padding(.vertical, 16)
                         .onTapGesture {
                             showingSearchResults = true
                         }
                     
-                    Spacer()
                 }
                 .background(Color(UIColor.systemBackground))
                 .cornerRadius(8)
                 .shadow(radius: 4)
                 .padding()
                 
-                Spacer()
                 
                 // Quick Access Cards
                 VStack(spacing: 16) {
