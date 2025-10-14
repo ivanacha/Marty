@@ -37,7 +37,7 @@ struct DirectionView: View {
                         .foregroundColor(.gray)
                         .padding(.leading, 12)
                     
-                    TextField("Where are we going?", text: $searchText)
+                    TextField("Where you going twin?", text: $searchText)
                         .padding(.vertical, 16)
                         .onTapGesture {
                             showingSearchResults = true
@@ -169,37 +169,6 @@ struct DirectionView: View {
                     // Extract line color, station names, etc.
                 }
             }
-        }
-    }
-}
-
-struct QuickAccessCard: View {
-    let icon: String
-    let title: String
-    let color: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 12) {
-                if title.isEmpty {
-                    Image(systemName: icon)
-                        .font(.system(size: 40))
-                        .foregroundColor(.white)
-                } else {
-                    Image(systemName: icon)
-                        .font(.system(size: 30))
-                        .foregroundColor(.white.opacity(0.9))
-                    
-                    Text(title)
-                        .font(.headline)
-                        .foregroundColor(.white)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 120)
-            .background(color)
-            .cornerRadius(12)
         }
     }
 }
