@@ -39,10 +39,12 @@ struct SearchResultsView: View {
                         VStack(alignment: .leading) {
                             Text(item.name ?? "Unknown")
                                 .font(.headline)
-                            if let address = item.placemark.title {
-                                Text(address)
+                                .lineLimit(1)
+                            if let formattedAddress = formatAddress(from: item.placemark) {
+                                Text(formattedAddress)
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
+                                    .lineLimit(1)
                             }
                         }
                     }
@@ -58,7 +60,7 @@ struct SearchResultsView: View {
             searchResults = []
             return
         }
-        
+
         isSearching = true
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
@@ -67,7 +69,7 @@ struct SearchResultsView: View {
             center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880),
             span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
         )
-        
+
         let search = MKLocalSearch(request: request)
         search.start { response, error in
             isSearching = false
@@ -75,5 +77,24 @@ struct SearchResultsView: View {
                 searchResults = response.mapItems
             }
         }
+    }
+
+    private func formatAddress(from placemark: MKPlacemark) -> String? {
+        var components: [String] = []
+
+        // Add street address (thorough fare + sub thorough fare if available)
+        if let subThoroughfare = placemark.subThoroughfare,
+           let thoroughfare = placemark.thoroughfare {
+            components.append("\(subThoroughfare) \(thoroughfare)")
+        } else if let thoroughfare = placemark.thoroughfare {
+            components.append(thoroughfare)
+        }
+
+        // Add city (locality)
+        if let city = placemark.locality {
+            components.append(city)
+        }
+
+        return components.isEmpty ? nil : components.joined(separator: ", ")
     }
 }
