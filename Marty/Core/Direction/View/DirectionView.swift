@@ -1,7 +1,7 @@
 //
 //  DirectionView.swift
 //  Marty
-//
+//  Direction feature for navigating to locations using MARTA transit
 //  Created by iVan on 10/13/25.
 //
 
@@ -19,6 +19,9 @@ struct DirectionView: View {
     @State private var searchText = ""
     @State private var showingSearchResults = false
     @State private var savedLocations: [SavedLocation] = []
+    @State private var searchResults: [MKMapItem] = []
+    @State private var isSearching = false
+    @FocusState private var isSearchFieldFocused: Bool
     
     var body: some View {
         ZStack {
@@ -37,13 +40,29 @@ struct DirectionView: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
                         .padding(.leading, 12)
-                    
-                    TextField("Where to?", text: $searchText)
+
+                    TextField("Where do you want to go?", text: $searchText)
                         .padding(.vertical, 16)
-                        .onTapGesture {
-                            showingSearchResults = true
+                        .focused($isSearchFieldFocused)
+                        .onChange(of: searchText) { oldValue, newValue in
+                            searchLocation(query: newValue)
                         }
-                    
+                        .onChange(of: isSearchFieldFocused) { oldValue, newValue in
+                            showingSearchResults = newValue
+                        }
+
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                            searchResults = []
+//                            isSearchFieldFocused = false
+//                            showingSearchResults = false
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                                .padding(.trailing, 12)
+                        }
+                    }
                 }
                 .background(Color(UIColor.systemBackground))
                 .cornerRadius(8)
@@ -82,39 +101,84 @@ struct DirectionView: View {
                     }
                     .padding(.horizontal)
                     
-                    // Info Card
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("GOOD TO KNOW")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.gray)
-                        
-                        Text("Cardboard tickets are soon to be a thing of the past! Information and alternatives")
-                            .font(.body)
-                        
-                        Image(systemName: "ticket")
-                            .font(.system(size: 60))
-                            .foregroundColor(.blue)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical)
+                    // Info Card or Search Results
+                    if showingSearchResults {
+                        // Inline Search Results
+                        VStack(spacing: 0) {
+                            if isSearching {
+                                ProgressView()
+                                    .padding()
+                            }
+
+                            if !searchText.isEmpty && !searchResults.isEmpty {
+                                ScrollView {
+                                    VStack(spacing: 0) {
+                                        ForEach(searchResults, id: \.self) { item in
+                                            Button(action: {
+                                                if let coordinate = item.placemark.coordinate as CLLocationCoordinate2D? {
+                                                    getDirections(to: coordinate)
+                                                    searchText = ""
+                                                    showingSearchResults = false
+                                                    isSearchFieldFocused = false
+                                                }
+                                            }) {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(item.name ?? "Unknown")
+                                                        .font(.headline)
+                                                        .foregroundColor(.primary)
+                                                        .lineLimit(1)
+                                                    if let formattedAddress = formatAddress(from: item.placemark) {
+                                                        Text(formattedAddress)
+                                                            .font(.subheadline)
+                                                            .foregroundColor(.gray)
+                                                            .lineLimit(1)
+                                                    }
+                                                }
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .padding()
+                                            }
+                                            Divider()
+                                        }
+                                    }
+                                }
+                                .frame(maxHeight: 300)
+                            } else if !searchText.isEmpty && !isSearching {
+                                Text("No results found")
+                                    .foregroundColor(.gray)
+                                    .padding()
+                            }
+                        }
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(12)
+                        .shadow(radius: 2)
+                        .padding(.horizontal)
+                        .padding(.bottom, 20)
+                    } else {
+                        // Info Card
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("GOOD TO KNOW")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.gray)
+
+                            Text("Physical tickets are soon to be a thing of the past! Information and alternatives")
+                                .font(.body)
+
+                            Image(systemName: "ticket")
+                                .font(.system(size: 60))
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical)
+                        }
+                        .padding()
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(12)
+                        .shadow(radius: 2)
+                        .padding(.horizontal)
+                        .padding(.bottom, 20)
                     }
-                    .padding()
-                    .background(Color(UIColor.systemBackground))
-                    .cornerRadius(12)
-                    .shadow(radius: 2)
-                    .padding(.horizontal)
-                    .padding(.bottom, 20)
                 }
             }
-        }
-        .sheet(isPresented: $showingSearchResults) {
-            SearchResultsView(
-                searchText: $searchText,
-                onLocationSelected: { location in
-                    getDirections(to: location)
-                    showingSearchResults = false
-                }
-            )
         }
         .onChange(of: locationManager.location) { oldValue, newLocation in
             if let location = newLocation {
@@ -169,6 +233,49 @@ struct DirectionView: View {
                 }
             }
         }
+    }
+
+    private func searchLocation(query: String) {
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+
+        isSearching = true
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = query
+        // Focus on Atlanta area for MARTA
+        request.region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880),
+            span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+        )
+
+        let search = MKLocalSearch(request: request)
+        search.start { response, error in
+            isSearching = false
+            if let response = response {
+                searchResults = response.mapItems
+            }
+        }
+    }
+
+    private func formatAddress(from placemark: MKPlacemark) -> String? {
+        var components: [String] = []
+
+        // Add street address (thorough fare + sub thorough fare if available)
+        if let subThoroughfare = placemark.subThoroughfare,
+           let thoroughfare = placemark.thoroughfare {
+            components.append("\(subThoroughfare) \(thoroughfare)")
+        } else if let thoroughfare = placemark.thoroughfare {
+            components.append(thoroughfare)
+        }
+
+        // Add city (locality)
+        if let city = placemark.locality {
+            components.append(city)
+        }
+
+        return components.isEmpty ? nil : components.joined(separator: ", ")
     }
 }
 
