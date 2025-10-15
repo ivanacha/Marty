@@ -31,7 +31,7 @@ struct QuickAccessCard: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 100)
+            .frame(height: 80)
             .background(color)
             .cornerRadius(12)
         }
