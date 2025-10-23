@@ -14,6 +14,14 @@ struct DirectionView: View {
     @State private var showingSearchResults = false
     @FocusState private var isSearchFieldFocused: Bool
     
+    // Computed property to bridge FocusState to Binding
+    private var isSearchFieldFocusedBinding: Binding<Bool> {
+        Binding(
+            get: { isSearchFieldFocused },
+            set: { isSearchFieldFocused = $0 }
+        )
+    }
+    
     var body: some View {
         ZStack {
             // Background Map
@@ -59,114 +67,98 @@ struct DirectionView: View {
                 .cornerRadius(8)
                 .shadow(radius: 4)
                 .padding()
-                
-                
-                // Quick Access Cards
-                VStack(spacing: 16) {
-                    HStack(spacing: 12) {
-                        QuickAccessCard(
-                            icon: "house.fill",
-                            title: "Home",
-                            color: Color.blue
-                        ) {
-                            // Navigate to home
-                            viewModel.navigateToSavedLocation(type: .home)
-                        }
-                        
-                        QuickAccessCard(
-                            icon: "briefcase.fill",
-                            title: "Work",
-                            color: Color.blue
-                        ) {
-                            // Navigate to work
-                            viewModel.navigateToSavedLocation(type: .work)
-                        }
-                        
-                        QuickAccessCard(
-                            icon: "plus",
-                            title: "",
-                            color: Color.blue
-                        ) {
-                            // Add new location
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    // Info Card or Search Results
-                    if showingSearchResults {
-                        // Inline Search Results
-                        VStack(spacing: 0) {
-                            if viewModel.isSearching {
-                                ProgressView()
-                                    .padding()
+
+
+                // Show directions if available, otherwise show quick access and search
+                if let routeInfo = viewModel.currentRoute {
+                    // Directions Display
+                    DirectionsDisplayView(viewModel: viewModel, routeInfo: routeInfo)
+                        .padding(.horizontal)
+                        .padding(.bottom, 20)
+                } else {
+                    // Quick Access Cards
+                    VStack(spacing: 16) {
+                        HStack(spacing: 12) {
+                            QuickAccessCard(
+                                icon: "house.fill",
+                                title: "Home",
+                                color: Color.blue
+                            ) {
+                                // Navigate to home
+                                viewModel.navigateToSavedLocation(type: .home)
                             }
 
-                            if !searchText.isEmpty && !viewModel.searchResults.isEmpty {
-                                ScrollView {
-                                    VStack(spacing: 0) {
-                                        ForEach(viewModel.searchResults, id: \.self) { item in
-                                            Button(action: {
-                                                if let coordinate = item.placemark.coordinate as CLLocationCoordinate2D? {
-                                                    viewModel.getDirections(to: coordinate)
-                                                    searchText = ""
-                                                    showingSearchResults = false
-                                                    isSearchFieldFocused = false
-                                                }
-                                            }) {
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    Text(item.name ?? "Unknown")
-                                                        .font(.headline)
-                                                        .foregroundColor(.primary)
-                                                        .lineLimit(1)
-                                                    if let formattedAddress = viewModel.formatAddress(from: item.placemark) {
-                                                        Text(formattedAddress)
-                                                            .font(.subheadline)
-                                                            .foregroundColor(.gray)
-                                                            .lineLimit(1)
-                                                    }
-                                                }
-                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                .padding()
-                                            }
-                                            Divider()
-                                        }
-                                    }
+                            QuickAccessCard(
+                                icon: "briefcase.fill",
+                                title: "Work",
+                                color: Color.blue
+                            ) {
+                                // Navigate to work
+                                viewModel.navigateToSavedLocation(type: .work)
+                            }
+
+                            QuickAccessCard(
+                                icon: "plus",
+                                title: "",
+                                color: Color.blue
+                            ) {
+                                // Add new location
+                            }
+                        }
+                        .padding(.horizontal)
+
+                        // Info Card or Search Results
+                        if showingSearchResults {
+                            // Inline Search Results
+                            VStack(spacing: 0) {
+                                if viewModel.isSearching {
+                                    ProgressView()
+                                        .padding()
                                 }
-                                .frame(maxHeight: 300)
-                            } else if !searchText.isEmpty && !viewModel.isSearching {
-                                Text("No results found")
-                                    .foregroundColor(.gray)
-                                    .padding()
+
+                                if !searchText.isEmpty && !viewModel.searchResults.isEmpty {
+                                    SearchResultsView(
+                                        viewModel: viewModel,
+                                        searchText: $searchText,
+                                        showingSearchResults: $showingSearchResults,
+                                        isSearchFieldFocused: isSearchFieldFocusedBinding
+                                    )
+                                    .frame(maxHeight: 300)
+                                } else if !searchText.isEmpty && !viewModel.isSearching {
+                                    Text("No results found")
+                                        .foregroundColor(.gray)
+                                        .padding()
+                                }
                             }
-                        }
-                        .background(Color(UIColor.systemBackground))
-                        .cornerRadius(12)
-                        .shadow(radius: 2)
-                        .padding(.horizontal)
-                        .padding(.bottom, 20)
-                    } else {
-                        // Info Card
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("GOOD TO KNOW")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.gray)
+                            .background(Color(UIColor.systemBackground))
+                            .cornerRadius(12)
+                            .shadow(radius: 2)
+                            .padding(.horizontal)
+                            .padding(.bottom, 20)
+                        } else {
+                            // Info Card
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("GOOD TO KNOW")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.gray)
 
-                            Text("Physical tickets are soon to be a thing of the past! Information and alternatives")
-                                .font(.body)
+                                Text("Physical tickets are soon to be a thing of the past! Information and alternatives")
+                                    .font(.body)
 
-                            Image(systemName: "ticket")
-                                .font(.system(size: 60))
-                                .foregroundColor(.blue)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical)
+                                Image(systemName: "ticket")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical)
+                            }
+                            .padding()
+                            .background(Color(UIColor.systemBackground))
+                            .cornerRadius(12)
+                            .shadow(radius: 2)
+                            .padding(.horizontal)
+                            .padding(.bottom, 20)
                         }
-                        .padding()
-                        .background(Color(UIColor.systemBackground))
-                        .cornerRadius(12)
-                        .shadow(radius: 2)
-                        .padding(.horizontal)
-                        .padding(.bottom, 20)
                     }
                 }
             }

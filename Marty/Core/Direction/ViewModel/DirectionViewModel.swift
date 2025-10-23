@@ -18,6 +18,7 @@ class DirectionViewModel: ObservableObject {
     @Published var locationManager = LocationManager()
     @Published var searchResults: [MKMapItem] = []
     @Published var isSearching = false
+    @Published var currentRoute: RouteInfo?
     @Published var region = MapCameraPosition.region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880), // Atlanta
@@ -47,49 +48,48 @@ class DirectionViewModel: ObservableObject {
     func navigateToSavedLocation(type: LocationType) {
         // Implement navigation to saved location
         if let savedLocation = savedLocations.first(where: { $0.type == type }) {
-            getDirections(to: savedLocation.coordinate)
+            getDirections(to: savedLocation.coordinate, destinationName: savedLocation.address)
         } else {
             // Prompt user to set up the location
         }
     }
-    
-    func getDirections(to destination: CLLocationCoordinate2D) {
+
+    func getDirections(to destination: CLLocationCoordinate2D, destinationName: String? = nil) {
         guard let userLocation = locationManager.location?.coordinate else {
             return
         }
-        
+
         let request = MKDirections.Request()
         request.source = MKMapItem(placemark: MKPlacemark(coordinate: userLocation))
         request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destination))
         request.transportType = .transit // For MARTA transit
-        
+
         let directions = MKDirections(request: request)
         directions.calculate { response, error in
-            if let error = error {
-                print("Directions error: \(error.localizedDescription)")
-                return
-            }
-            
-            guard let route = response?.routes.first else { return }
-            // Handle route - navigate to directions display view
-            print("Route found: \(route.distance) meters, \(route.expectedTravelTime) seconds")
-            
             Task { @MainActor in
-                self.parseTransitSteps(route: route)
+                if let error = error {
+                    print("Directions error: \(error.localizedDescription)")
+                    // Could set an error state here
+                    return
+                }
+
+                guard let route = response?.routes.first else {
+                    print("No routes found")
+                    return
+                }
+
+                // Store the route information
+                self.currentRoute = RouteInfo(
+                    route: route,
+                    destination: destination,
+                    destinationName: destinationName
+                )
             }
         }
     }
-    
-    func parseTransitSteps(route: MKRoute) {
-        for step in route.steps {
-            if let transitInstructions = step.instructions as String? {
-                // Check if it's a MARTA route
-                if transitInstructions.contains("MARTA") {
-                    print("MARTA Step: \(transitInstructions)")
-                    // Extract line color, station names, etc.
-                }
-            }
-        }
+
+    func clearRoute() {
+        currentRoute = nil
     }
     
     func formatAddress(from placemark: MKPlacemark) -> String? {

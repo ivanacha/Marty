@@ -9,92 +9,42 @@ import SwiftUI
 import MapKit
 
 struct SearchResultsView: View {
+    @ObservedObject var viewModel: DirectionViewModel
     @Binding var searchText: String
-    @State private var searchResults: [MKMapItem] = []
-    @State private var isSearching = false
-    let onLocationSelected: (CLLocationCoordinate2D) -> Void
-    
+    @Binding var showingSearchResults: Bool
+    @Binding var isSearchFieldFocused: Bool
+
     var body: some View {
-        NavigationView {
-            VStack {
-                // Search field
-                TextField("Search for a place", text: $searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
-                    .onChange(of: searchText) { oldValue, newValue in
-                        searchLocation(query: newValue)
-                    }
-                
-                if isSearching {
-                    ProgressView()
-                        .padding()
-                }
-                
-                List(searchResults, id: \.self) { item in
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(viewModel.searchResults, id: \.self) { item in
                     Button(action: {
                         if let coordinate = item.placemark.coordinate as CLLocationCoordinate2D? {
-                            onLocationSelected(coordinate)
+                            let destinationName = item.name ?? viewModel.formatAddress(from: item.placemark)
+                            viewModel.getDirections(to: coordinate, destinationName: destinationName)
+                            searchText = ""
+                            showingSearchResults = false
+                            isSearchFieldFocused = false
                         }
                     }) {
-                        VStack(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(item.name ?? "Unknown")
                                 .font(.headline)
+                                .foregroundColor(.primary)
                                 .lineLimit(1)
-                            if let formattedAddress = formatAddress(from: item.placemark) {
+                            if let formattedAddress = viewModel.formatAddress(from: item.placemark) {
                                 Text(formattedAddress)
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
                                     .lineLimit(1)
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
                     }
+                    Divider()
                 }
             }
-            .navigationTitle("Search Location")
-            .navigationBarTitleDisplayMode(.inline)
         }
-    }
-    
-    private func searchLocation(query: String) {
-        guard !query.isEmpty else {
-            searchResults = []
-            return
-        }
-
-        isSearching = true
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = query
-        // Focus on Atlanta area for MARTA
-        request.region = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880),
-            span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
-        )
-
-        let search = MKLocalSearch(request: request)
-        search.start { response, error in
-            isSearching = false
-            if let response = response {
-                searchResults = response.mapItems
-            }
-        }
-    }
-
-    private func formatAddress(from placemark: MKPlacemark) -> String? {
-        var components: [String] = []
-
-        // Add street address (thorough fare + sub thorough fare if available)
-        if let subThoroughfare = placemark.subThoroughfare,
-           let thoroughfare = placemark.thoroughfare {
-            components.append("\(subThoroughfare) \(thoroughfare)")
-        } else if let thoroughfare = placemark.thoroughfare {
-            components.append(thoroughfare)
-        }
-
-        // Add city (locality)
-        if let city = placemark.locality {
-            components.append(city)
-        }
-
-        return components.isEmpty ? nil : components.joined(separator: ", ")
     }
 }
