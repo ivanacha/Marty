@@ -21,11 +21,12 @@ class DirectionViewModel: ObservableObject {
     @Published var currentRoute: RouteInfo?
     @Published var region = MapCameraPosition.region(
         MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880), // Atlanta
-            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+            center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880), // Atlanta default
+            span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
         )
     )
-
+    
+    private var hasInitiallyPositioned = false
     private var cancellables = Set<AnyCancellable>()
 
     init() {
@@ -36,13 +37,51 @@ class DirectionViewModel: ObservableObject {
                 self?.updateRegion(with: location)
             }
             .store(in: &cancellables)
+            
+        // Also observe authorization status changes
+        locationManager.$authorizationStatus
+            .sink { [weak self] status in
+                if status == .authorizedWhenInUse || status == .authorizedAlways {
+                    self?.locationManager.startLocationUpdates()
+                }
+            }
+            .store(in: &cancellables)
     }
 
     private func updateRegion(with location: CLLocation) {
-        region = .region(MKCoordinateRegion(
-            center: location.coordinate,
+        // Only center on user's location the first time we get it
+        guard !hasInitiallyPositioned else { return }
+        
+        hasInitiallyPositioned = true
+        // Position user location in upper portion of screen by offsetting the center
+        let offsetLatitude = location.coordinate.latitude - 0.003 // Move center down so user pin appears higher
+        let adjustedCenter = CLLocationCoordinate2D(
+            latitude: offsetLatitude,
+            longitude: location.coordinate.longitude
+        )
+        
+        let newRegion = MKCoordinateRegion(
+            center: adjustedCenter,
             span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-        ))
+        )
+        region = .region(newRegion)
+    }
+    
+    func centerOnUserLocation() {
+        guard let location = locationManager.location else { return }
+        
+        // Position user location in upper portion of screen by offsetting the center
+        let offsetLatitude = location.coordinate.latitude - 0.003 // Move center down so user pin appears higher
+        let adjustedCenter = CLLocationCoordinate2D(
+            latitude: offsetLatitude,
+            longitude: location.coordinate.longitude
+        )
+        
+        let newRegion = MKCoordinateRegion(
+            center: adjustedCenter,
+            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+        )
+        region = .region(newRegion)
     }
 
     func navigateToSavedLocation(type: LocationType) {

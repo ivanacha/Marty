@@ -27,9 +27,23 @@ struct DirectionView: View {
             // Background Map
             Map(position: $viewModel.region) {
                 UserAnnotation()
+                    .tint(.blue)
             }
             .mapStyle(.standard)
+            .mapControls {
+                MapUserLocationButton()
+                MapCompass()
+                MapScaleView()
+            }
+            .onMapCameraChange { context in
+                // Allow free camera movement - don't force back to user location
+            }
             .ignoresSafeArea()
+            .onAppear {
+                // Request location permission and start location updates when view appears
+                viewModel.locationManager.requestLocationPermission()
+                viewModel.locationManager.startLocationUpdates()
+            }
             
             // Foreground UI
             VStack(spacing: 0) {

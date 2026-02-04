@@ -67,6 +67,8 @@ extension LocationManager: CLLocationManagerDelegate {
         switch status {
         case .authorizedWhenInUse, .authorizedAlways:
             startLocationUpdates()
+            // Get an immediate location reading
+            locationManager.requestLocation()
         case .denied, .restricted:
             stopLocationUpdates()
         case .notDetermined:
