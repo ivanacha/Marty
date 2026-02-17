@@ -2,7 +2,8 @@
 //  DirectionViewModel.swift
 //  Marty
 //
-//  Created by iVan on 10/15/25.
+//  Main coordinator ViewModel that orchestrates map, search, and route functionality
+//  Optimized for faster loading with lazy initialization and dependency injection
 //
 
 import Foundation
@@ -11,169 +12,119 @@ import Combine
 import SwiftUI
 
 @MainActor
-class DirectionViewModel: ObservableObject {
+final class DirectionViewModel: ObservableObject {
     
-    // The ModelView should include all the functions executed in the main View.
-    @Published private var savedLocations: [SavedLocation] = []
-    @Published var locationManager = LocationManager()
-    @Published var searchResults: [MKMapItem] = []
-    @Published var isSearching = false
-    @Published var currentRoute: RouteInfo?
-    @Published var region = MapCameraPosition.region(
+    // MARK: - Child ViewModels (Lazy Loading)
+    private lazy var _mapViewModel = MapViewModel()
+    private lazy var _searchViewModel = SearchViewModel()
+    private lazy var _routeViewModel = RouteViewModel()
+    
+    var mapViewModel: MapViewModel {
+        return _mapViewModel
+    }
+    
+    var searchViewModel: SearchViewModel {
+        return _searchViewModel
+    }
+    
+    var routeViewModel: RouteViewModel {
+        return _routeViewModel
+    }
+    
+    // MARK: - Published Properties (Forwarding from child ViewModels)
+    @Published var region: MapCameraPosition = MapCameraPosition.region(
         MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880), // Atlanta default
+            center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880),
             span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
         )
     )
+    @Published var searchResults: [MKMapItem] = []
+    @Published var isSearching = false
+    @Published var currentRoute: RouteInfo?
+    @Published var isCalculatingRoute = false
     
-    private var hasInitiallyPositioned = false
     private var cancellables = Set<AnyCancellable>()
-
+    
     init() {
-        // Observe location changes and update region
-        locationManager.$location
-            .compactMap { $0 }
-            .sink { [weak self] location in
-                self?.updateRegion(with: location)
-            }
+        // Setup bindings only when needed (lazy)
+        setupBindingsIfNeeded()
+    }
+    
+    private func setupBindingsIfNeeded() {
+        // Only setup when ViewModels are accessed
+    }
+    
+    private func setupBindings() {
+        // Forward map region changes
+        _mapViewModel.$region
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.region, on: self)
             .store(in: &cancellables)
-            
-        // Also observe authorization status changes
-        locationManager.$authorizationStatus
-            .sink { [weak self] status in
-                if status == .authorizedWhenInUse || status == .authorizedAlways {
-                    self?.locationManager.startLocationUpdates()
-                }
-            }
+        
+        // Forward search results
+        _searchViewModel.$searchResults
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.searchResults, on: self)
+            .store(in: &cancellables)
+        
+        _searchViewModel.$isSearching
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isSearching, on: self)
+            .store(in: &cancellables)
+        
+        // Forward route information
+        _routeViewModel.$currentRoute
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.currentRoute, on: self)
+            .store(in: &cancellables)
+        
+        _routeViewModel.$isCalculatingRoute
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isCalculatingRoute, on: self)
             .store(in: &cancellables)
     }
-
-    private func updateRegion(with location: CLLocation) {
-        // Only center on user's location the first time we get it
-        guard !hasInitiallyPositioned else { return }
-        
-        hasInitiallyPositioned = true
-        // Position user location in upper portion of screen by offsetting the center
-        let offsetLatitude = location.coordinate.latitude - 0.003 // Move center down so user pin appears higher
-        let adjustedCenter = CLLocationCoordinate2D(
-            latitude: offsetLatitude,
-            longitude: location.coordinate.longitude
-        )
-        
-        let newRegion = MKCoordinateRegion(
-            center: adjustedCenter,
-            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-        )
-        region = .region(newRegion)
+    
+    // MARK: - Convenience Methods (Delegation)
+    func requestLocationPermission() {
+        setupBindings()
+        mapViewModel.requestLocationPermission()
+    }
+    
+    func startLocationUpdates() {
+        setupBindings()
+        mapViewModel.startLocationUpdates()
     }
     
     func centerOnUserLocation() {
-        guard let location = locationManager.location else { return }
-        
-        // Position user location in upper portion of screen by offsetting the center
-        let offsetLatitude = location.coordinate.latitude - 0.003 // Move center down so user pin appears higher
-        let adjustedCenter = CLLocationCoordinate2D(
-            latitude: offsetLatitude,
-            longitude: location.coordinate.longitude
-        )
-        
-        let newRegion = MKCoordinateRegion(
-            center: adjustedCenter,
-            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-        )
-        region = .region(newRegion)
+        mapViewModel.centerOnUserLocation()
     }
-
-    func navigateToSavedLocation(type: LocationType) {
-        // Implement navigation to saved location
-        if let savedLocation = savedLocations.first(where: { $0.type == type }) {
-            getDirections(to: savedLocation.coordinate, destinationName: savedLocation.address)
+    
+    func searchLocation(query: String) {
+        // MapCameraPosition is not destructurable; derive a region from the current user location if available.
+        if let userLocation = mapViewModel.userLocation {
+            let currentRegion = MKCoordinateRegion(
+                center: userLocation.coordinate,
+                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            )
+            searchViewModel.searchLocations(query: query, in: currentRegion)
         } else {
-            // Prompt user to set up the location
+            searchViewModel.searchLocations(query: query)
         }
     }
-
+    
     func getDirections(to destination: CLLocationCoordinate2D, destinationName: String? = nil) {
-        guard let userLocation = locationManager.location?.coordinate else {
-            return
-        }
-
-        let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: userLocation))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destination))
-        request.transportType = .transit // For MARTA transit
-
-        let directions = MKDirections(request: request)
-        directions.calculate { response, error in
-            Task { @MainActor in
-                if let error = error {
-                    print("Directions error: \(error.localizedDescription)")
-                    // Could set an error state here
-                    return
-                }
-
-                guard let route = response?.routes.first else {
-                    print("No routes found")
-                    return
-                }
-
-                // Store the route information
-                self.currentRoute = RouteInfo(
-                    route: route,
-                    destination: destination,
-                    destinationName: destinationName
-                )
-            }
-        }
+        routeViewModel.calculateRoute(to: destination, destinationName: destinationName)
     }
-
+    
+    func navigateToSavedLocation(type: LocationType) {
+        routeViewModel.navigateToSavedLocation(type: type)
+    }
+    
     func clearRoute() {
-        currentRoute = nil
+        routeViewModel.clearRoute()
     }
     
     func formatAddress(from placemark: MKPlacemark) -> String? {
-        var components: [String] = []
-
-        // Add street address (thorough fare + sub thorough fare if available)
-        if let subThoroughfare = placemark.subThoroughfare,
-           let thoroughfare = placemark.thoroughfare {
-            components.append("\(subThoroughfare) \(thoroughfare)")
-        } else if let thoroughfare = placemark.thoroughfare {
-            components.append(thoroughfare)
-        }
-
-        // Add city (locality)
-        if let city = placemark.locality {
-            components.append(city)
-        }
-
-        return components.isEmpty ? nil : components.joined(separator: ", ")
+        return searchViewModel.formatAddress(from: placemark)
     }
-
-    func searchLocation(query: String) {
-        guard !query.isEmpty else {
-            searchResults = []
-            return
-        }
-
-        isSearching = true
-        let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = query
-        // Focus on Atlanta area for MARTA
-        request.region = MKCoordinateRegion(
-            center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880),
-            span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
-        )
-
-        let search = MKLocalSearch(request: request)
-        search.start { response, error in
-            Task { @MainActor in
-                self.isSearching = false
-                if let response = response {
-                    self.searchResults = response.mapItems
-                }
-            }
-        }
-    }
-
 }

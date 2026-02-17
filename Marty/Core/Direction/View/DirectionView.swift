@@ -22,10 +22,18 @@ struct DirectionView: View {
         )
     }
     
+    // Explicit binding to the view model's region to avoid dynamicMember wrapper issues
+    private var regionBinding: Binding<MapCameraPosition> {
+        Binding<MapCameraPosition>(
+            get: { viewModel.region },
+            set: { viewModel.region = $0 }
+        )
+    }
+    
     var body: some View {
         ZStack {
             // Background Map
-            Map(position: $viewModel.region) {
+            Map(position: regionBinding) {
                 UserAnnotation()
                     .tint(.blue)
             }
@@ -38,11 +46,11 @@ struct DirectionView: View {
             .onMapCameraChange { context in
                 // Allow free camera movement - don't force back to user location
             }
-            .ignoresSafeArea()
+            .safeAreaPadding(.top)
             .onAppear {
                 // Request location permission and start location updates when view appears
-                viewModel.locationManager.requestLocationPermission()
-                viewModel.locationManager.startLocationUpdates()
+                viewModel.requestLocationPermission()
+                viewModel.startLocationUpdates()
             }
             
             // Foreground UI
@@ -96,7 +104,7 @@ struct DirectionView: View {
                             QuickAccessCard(
                                 icon: "house.fill",
                                 title: "Home",
-                                color: Color.blue
+                                color: Color.orange
                             ) {
                                 // Navigate to home
                                 viewModel.navigateToSavedLocation(type: .home)
@@ -105,7 +113,7 @@ struct DirectionView: View {
                             QuickAccessCard(
                                 icon: "briefcase.fill",
                                 title: "Work",
-                                color: Color.blue
+                                color: Color.yellow
                             ) {
                                 // Navigate to work
                                 viewModel.navigateToSavedLocation(type: .work)
@@ -114,7 +122,7 @@ struct DirectionView: View {
                             QuickAccessCard(
                                 icon: "plus",
                                 title: "",
-                                color: Color.blue
+                                color: Color.teal
                             ) {
                                 // Add new location
                             }
@@ -160,7 +168,7 @@ struct DirectionView: View {
                                 Text("Physical tickets are soon to be a thing of the past! Information and alternatives")
                                     .font(.body)
 
-                                Image(systemName: "ticket")
+                                Image(systemName: "exclamationmark.triangle")
                                     .font(.system(size: 60))
                                     .foregroundColor(.blue)
                                     .frame(maxWidth: .infinity)
