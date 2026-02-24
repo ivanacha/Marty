@@ -13,7 +13,7 @@ struct DirectionView: View {
     @State private var region = MapCameraPosition.region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880), // Atlanta
-            span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+            span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
         )
     )
     @State private var searchText = ""
@@ -27,10 +27,15 @@ struct DirectionView: View {
                 UserAnnotation()
             }
             .mapStyle(.standard)
-            .ignoresSafeArea()
+            .mapControls {
+                            MapUserLocationButton()
+                            MapCompass()
+                            MapScaleView()
+                        }
             
             // Foreground UI
             VStack(spacing: 0) {
+                Spacer()
                 // Search Bar
                 HStack {
                     Image(systemName: "magnifyingglass")
@@ -50,7 +55,6 @@ struct DirectionView: View {
                 .shadow(radius: 4)
                 .padding()
                 
-                Spacer()
                 
                 // Quick Access Cards
                 VStack(spacing: 16) {
