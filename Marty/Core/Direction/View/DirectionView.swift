@@ -13,7 +13,7 @@ struct DirectionView: View {
     @State private var region = MapCameraPosition.region(
         MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 33.7490, longitude: -84.3880), // Atlanta
-            span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
+            span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.01)
         )
     )
     @State private var searchText = ""

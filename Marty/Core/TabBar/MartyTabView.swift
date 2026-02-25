@@ -34,7 +34,7 @@ struct MartyTabView: View {
                 .onAppear { selectedTab = 1 }
                 .tag(1)
             
-            Text("")
+            Text("Ticket")
                 .tabItem {
                     Image(systemName: "ticket")
                 }
