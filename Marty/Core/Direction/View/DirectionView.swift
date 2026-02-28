@@ -14,6 +14,10 @@ struct DirectionView: View {
     @State private var showingSearchResults = false
     @FocusState private var isSearchFieldFocused: Bool
     
+    // Route related properties
+    @State private var showRoute = false
+    @State private var routeDisplaying = false
+    
     // Computed property to bridge FocusState to Binding
     private var isSearchFieldFocusedBinding: Binding<Bool> {
         Binding(
@@ -36,6 +40,19 @@ struct DirectionView: View {
             Map(position: regionBinding) {
                 UserAnnotation()
                     .tint(.blue)
+                
+                // Display route segments if available
+                if let currentRoute = viewModel.currentRoute {
+                    // Destination marker
+                    Marker(currentRoute.destinationName ?? "Destination", coordinate: currentRoute.destination)
+                        .tint(.red)
+                    
+                    // Route segments with color coding
+                    ForEach(currentRoute.segments) { segment in
+                        MapPolyline(segment.polyline)
+                            .stroke(segment.type.color, style: segment.type.strokeStyle)
+                    }
+                }
             }
             .mapStyle(.standard)
             .mapControls {
@@ -51,6 +68,22 @@ struct DirectionView: View {
                 // Request location permission and start location updates when view appears
                 viewModel.requestLocationPermission()
                 viewModel.startLocationUpdates()
+            }
+            .onChange(of: viewModel.currentRoute) { oldValue, newValue in
+                // Adjust map region when route is calculated
+                if let route = newValue {
+                    let rect = route.route.polyline.boundingMapRect
+                    let region = MKCoordinateRegion(rect)
+                    // Add some padding to the region
+                    let expandedRegion = MKCoordinateRegion(
+                        center: region.center,
+                        span: MKCoordinateSpan(
+                            latitudeDelta: region.span.latitudeDelta * 1.2,
+                            longitudeDelta: region.span.longitudeDelta * 1.2
+                        )
+                    )
+                    viewModel.region = .region(expandedRegion)
+                }
             }
             
             // Foreground UI
@@ -92,11 +125,29 @@ struct DirectionView: View {
 
 
                 // Show directions if available, otherwise show quick access and search
-                if let routeInfo = viewModel.currentRoute {
-                    // Directions Display
-                    DirectionsDisplayView(viewModel: viewModel, routeInfo: routeInfo)
-                        .padding(.horizontal)
-                        .padding(.bottom, 20)
+                if let currentRoute = viewModel.currentRoute {
+                    // Route Information Card
+                    RouteInfoCard(routeInfo: currentRoute, onClearRoute: {
+                        viewModel.clearRoute()
+                        showRoute = false
+                    })
+                    .padding(.horizontal)
+                    .padding(.bottom, 20)
+                } else if viewModel.isCalculatingRoute {
+                    // Loading state for route calculation
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Calculating MARTA route...")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(Color(UIColor.systemBackground))
+                    .cornerRadius(12)
+                    .shadow(radius: 2)
+                    .padding(.horizontal)
+                    .padding(.bottom, 20)
                 } else {
                     // Quick Access Cards
                     VStack(spacing: 16) {

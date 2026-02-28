@@ -7,12 +7,21 @@
 
 import Foundation
 import MapKit
+import SwiftUI
 
 struct RouteInfo: Identifiable {
     let id = UUID()
     let route: MKRoute
     let destination: CLLocationCoordinate2D
     let destinationName: String?
+    let segments: [RouteSegment]
+
+    init(route: MKRoute, destination: CLLocationCoordinate2D, destinationName: String?) {
+        self.route = route
+        self.destination = destination
+        self.destinationName = destinationName
+        self.segments = RouteInfo.createSegments(from: route)
+    }
 
     var distance: String {
         let distanceInMiles = route.distance / 1609.34
@@ -54,6 +63,44 @@ struct RouteInfo: Identifiable {
         }
 
         return steps
+    }
+    
+    // MARK: - Private Methods
+    private static func createSegments(from route: MKRoute) -> [RouteSegment] {
+        var segments: [RouteSegment] = []
+        var currentPointIndex = 0
+        
+        for step in route.steps {
+            let stepPolyline = step.polyline
+            let segmentType = determineSegmentType(from: step)
+            
+            let segment = RouteSegment(
+                polyline: stepPolyline,
+                type: segmentType,
+                instructions: step.instructions,
+                distance: step.distance
+            )
+            
+            segments.append(segment)
+        }
+        
+        return segments
+    }
+    
+    private static func determineSegmentType(from step: MKRoute.Step) -> RouteSegmentType {
+        let instructions = step.instructions.lowercased()
+        
+        if instructions.contains("walk") || instructions.contains("walking") {
+            return .walking
+        } else if instructions.contains("marta") || instructions.contains("train") || instructions.contains("rail") {
+            // Try to determine the specific MARTA line
+            let martaLine = MARTALine.lineForInstructions(step.instructions)
+            return .transit(line: martaLine)
+        } else if step.transportType == .transit {
+            return .transitGeneric
+        } else {
+            return .walking
+        }
     }
 }
 
