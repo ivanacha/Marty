@@ -69,9 +69,9 @@ struct DirectionView: View {
                 viewModel.requestLocationPermission()
                 viewModel.startLocationUpdates()
             }
-            .onChange(of: viewModel.currentRoute) { oldValue, newValue in
+            .onChange(of: viewModel.currentRoute?.id) { oldValue, newValue in
                 // Adjust map region when route is calculated
-                if let route = newValue {
+                if let route = viewModel.currentRoute {
                     let rect = route.route.polyline.boundingMapRect
                     let region = MKCoordinateRegion(rect)
                     // Add some padding to the region
@@ -99,6 +99,13 @@ struct DirectionView: View {
                         .padding(.vertical, 16)
                         .focused($isSearchFieldFocused)
                         .onChange(of: searchText) { oldValue, newValue in
+                            // Hide quick access cards immediately when user starts typing
+                            if !newValue.isEmpty {
+                                showingSearchResults = true
+                            } else if !isSearchFieldFocused {
+                                showingSearchResults = false
+                            }
+                            // Perform the search
                             viewModel.searchLocation(query: newValue)
                         }
                         .onChange(of: isSearchFieldFocused) { oldValue, newValue in
@@ -109,8 +116,8 @@ struct DirectionView: View {
                         Button(action: {
                             searchText = ""
                             viewModel.searchResults = []
-//                            isSearchFieldFocused = false
-//                            showingSearchResults = false
+                            isSearchFieldFocused = false
+                            showingSearchResults = false
                         }) {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.gray)

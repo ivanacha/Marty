@@ -3,39 +3,11 @@
 //  Marty
 //
 //  Model for saved user locations (home, work, custom)
-//  Now conforms to Codable for better persistence support
+//  Uses LocationType enum and conforms to Codable for better persistence support
 //
 
 import Foundation
 import CoreLocation
-
-enum LocationType: String, Codable, CaseIterable {
-    case home = "home"
-    case work = "work"
-    case custom = "custom"
-    
-    var displayName: String {
-        switch self {
-        case .home:
-            return "Home"
-        case .work:
-            return "Work"
-        case .custom:
-            return "Custom"
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .home:
-            return "house.fill"
-        case .work:
-            return "briefcase.fill"
-        case .custom:
-            return "mappin"
-        }
-    }
-}
 
 struct SavedLocation: Identifiable, Codable {
     let id = UUID()

@@ -21,6 +21,13 @@ struct RouteInfo: Identifiable {
         self.destination = destination
         self.destinationName = destinationName
         self.segments = RouteInfo.createSegments(from: route)
+        
+        // Debug logging
+        print("🗺️ Route created with transport type: \(route.transportType)")
+        print("📝 Route has \(route.steps.count) steps:")
+        for (index, step) in route.steps.enumerated() {
+            print("   Step \(index + 1): \(step.instructions) (Transport: \(step.transportType))")
+        }
     }
 
     var distance: String {
@@ -68,7 +75,7 @@ struct RouteInfo: Identifiable {
     // MARK: - Private Methods
     private static func createSegments(from route: MKRoute) -> [RouteSegment] {
         var segments: [RouteSegment] = []
-        var currentPointIndex = 0
+        _ = 0
         
         for step in route.steps {
             let stepPolyline = step.polyline

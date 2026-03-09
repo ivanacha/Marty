@@ -43,10 +43,15 @@ final class RouteViewModel: ObservableObject {
         isCalculatingRoute = true
         routeError = nil
         
+        print("🧭 Starting route calculation to: \(destinationName ?? "Unknown destination")")
+        
         Task {
             do {
                 // Ensure we have a user location; if not, try to obtain one with a short timeout
-                let sourceCoordinate = try await ensureUserCoordinate(timeout: 5.0)
+                let sourceCoordinate = try await ensureUserCoordinate(timeout: 10.0) // Increased timeout
+                
+                print("📍 User location obtained: \(sourceCoordinate)")
+                print("🎯 Destination: \(destination)")
                 
                 let route = try await directionsService.calculateTransitRoute(
                     from: sourceCoordinate,
@@ -54,6 +59,7 @@ final class RouteViewModel: ObservableObject {
                 )
                 
                 await MainActor.run {
+                    print("✅ Route calculation successful!")
                     self.currentRoute = RouteInfo(
                         route: route,
                         destination: destination,
@@ -63,6 +69,7 @@ final class RouteViewModel: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
+                    print("❌ Route calculation failed: \(error.localizedDescription)")
                     self.routeError = error
                     self.isCalculatingRoute = false
                 }
