@@ -65,9 +65,10 @@ struct DirectionView: View {
             }
             .safeAreaPadding(.top)
             .onAppear {
-                // Request location permission and start location updates when view appears
-                viewModel.requestLocationPermission()
-                viewModel.startLocationUpdates()
+                Task { @MainActor in
+                    viewModel.requestLocationPermission()
+                    viewModel.startLocationUpdates()
+                }
             }
             .onChange(of: viewModel.currentRoute?.id) { oldValue, newValue in
                 // Adjust map region when route is calculated

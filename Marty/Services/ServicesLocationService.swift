@@ -45,7 +45,6 @@ final class LocationService: NSObject, LocationServiceProtocol, ObservableObject
     
     private override init() {
         super.init()
-        authorizationStatus = CLLocationManager().authorizationStatus
     }
     
     func requestLocationPermission() {

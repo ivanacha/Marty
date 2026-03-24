@@ -44,17 +44,13 @@ final class DirectionViewModel: ObservableObject {
     @Published var isCalculatingRoute = false
     
     private var cancellables = Set<AnyCancellable>()
-    
-    init() {
-        // Setup bindings only when needed (lazy)
-        setupBindingsIfNeeded()
-    }
-    
-    private func setupBindingsIfNeeded() {
-        // Only setup when ViewModels are accessed
-    }
-    
+    private var bindingsSetUp = false
+
+    init() {}
+
     private func setupBindings() {
+        guard !bindingsSetUp else { return }
+        bindingsSetUp = true
         // Forward map region changes
         _mapViewModel.$region
             .receive(on: DispatchQueue.main)
