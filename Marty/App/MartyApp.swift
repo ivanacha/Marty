@@ -2,7 +2,7 @@
 //  MartyApp.swift
 //  Marty
 //
-//  Created by iVan on 10/8/25.
+//  Optimized app entry point with lazy loading for better startup performance
 //
 
 import SwiftUI
@@ -10,7 +10,9 @@ import SwiftData
 
 @main
 struct MartyApp: App {
-    var sharedModelContainer: ModelContainer = {
+    
+    // Static model container - lazily initialized on first access without requiring a mutating getter
+    private static let sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
         ])
@@ -26,7 +28,8 @@ struct MartyApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.services, ServiceContainer.shared)
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(Self.sharedModelContainer)
     }
 }

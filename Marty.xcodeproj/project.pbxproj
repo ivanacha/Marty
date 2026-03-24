@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		9215469A2E97564F00C31FCD /* Marty.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Marty.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		92176F982EA02077004E4E65 /* Marty.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Marty.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -46,16 +46,8 @@
 			isa = PBXGroup;
 			children = (
 				9215469C2E97564F00C31FCD /* Marty */,
-				9215469B2E97564F00C31FCD /* Products */,
+				92176F982EA02077004E4E65 /* Marty.app */,
 			);
-			sourceTree = "<group>";
-		};
-		9215469B2E97564F00C31FCD /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				9215469A2E97564F00C31FCD /* Marty.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -80,7 +72,7 @@
 			packageProductDependencies = (
 			);
 			productName = Marty;
-			productReference = 9215469A2E97564F00C31FCD /* Marty.app */;
+			productReference = 92176F982EA02077004E4E65 /* Marty.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -108,7 +100,7 @@
 			mainGroup = 921546912E97564F00C31FCD;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 9215469B2E97564F00C31FCD /* Products */;
+			productRefGroup = 921546912E97564F00C31FCD;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
