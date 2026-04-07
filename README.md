@@ -7,7 +7,7 @@
    • Search for places with region bias to the user’s location when available.</br>
    • Calculate and display public transit routes, including steps and ETA.</br>
    • Manage and navigate to saved locations (e.g., Home, Work, Custom).</br>
-<h3>Current feature focus<h3></br>
+<h3>Current feature focus</h3></br>
    • Turn-by-turn voice navigation.</br>
    • Offline maps and routing.</br>
    • Full persistence for saved locations (placeholder TODOs exist for SwiftData).</br>
