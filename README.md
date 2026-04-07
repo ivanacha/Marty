@@ -2,12 +2,12 @@
 </br>A modern SwiftUI app for iOS/iPadOS that helps users find places, view them on a map, and get public transit directions. Built with MapKit, MVVM, and dependency injection for clean separation of concerns and testability.
 
 *Scope* </br>
-• Core focus</br>
+• Feature objectives</br>
   • Show a map centered around the user with smooth camera control.</br>
    • Search for places with region bias to the user’s location when available.</br>
    • Calculate and display public transit routes, including steps and ETA.</br>
    • Manage and navigate to saved locations (e.g., Home, Work, Custom).</br>
-• Out of scope (for now)</br>
+<h3>Current feature focus<h3></br>
    • Turn-by-turn voice navigation.</br>
    • Offline maps and routing.</br>
    • Full persistence for saved locations (placeholder TODOs exist for SwiftData).</br>
